@@ -1,7 +1,8 @@
 package routes
 
 import (
-	"encoding/json"
+	templates "chat-app/golang-htmx/internal/templates"
+	"context"
 	"net/http"
 )
 
@@ -11,11 +12,7 @@ type ErrJSON struct {
 
 func CreateRoutes(s *http.ServeMux) {
 	s.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		j, err := json.MarshalIndent(ErrJSON{"Not supported yet."}, "\n", "    ")
-		if err != nil {
-			return
-		}
-
-		http.Error(w, string(j), http.StatusBadRequest)
+		component := templates.Index()
+		component.Render(context.Background(), w)
 	})
 }
