@@ -14,7 +14,7 @@ func main() {
 	router := http.NewServeMux()
 	routes.CreateRoutes(router)
 
-	router.Handle("GET /static/", http.StripPrefix("/static/", files))
+	router.Handle("/static/", http.StripPrefix("/static/", files))
 
 	srv := http.Server{
 		Addr:    fmt.Sprintf(":%s", os.Getenv("PORT")),
