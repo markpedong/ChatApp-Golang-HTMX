@@ -11,15 +11,16 @@ import (
 )
 
 func main() {
+	files := http.FileServer(http.Dir("./static"))
 	p := os.Getenv("PORT")
-	route := http.NewServeMux()
-	fileServer := http.FileServer(http.Dir("./static"))
-	route.Handle("/static/*", http.StripPrefix("/static/", fileServer))
-	routes.CreateRoutes(route)
+	router := http.NewServeMux()
+	routes.CreateRoutes(router)
+
+	router.Handle("/static/", http.StripPrefix("/static/", files))
 
 	s := http.Server{
 		Addr:    fmt.Sprintf(":%s", p),
-		Handler: route,
+		Handler: router,
 	}
 
 	log.Printf("Server started and listening n port :%s ", p)
