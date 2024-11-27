@@ -3,7 +3,6 @@ package main
 import (
 	"chat-app/golang-htmx/routes"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 
@@ -12,19 +11,16 @@ import (
 
 func main() {
 	files := http.FileServer(http.Dir("./static"))
-	p := os.Getenv("PORT")
 	router := http.NewServeMux()
 	routes.CreateRoutes(router)
 
-	router.Handle("/static/", http.StripPrefix("/static/", files))
+	router.Handle("GET /static/", http.StripPrefix("/static/", files))
 
-	s := http.Server{
-		Addr:    fmt.Sprintf(":%s", p),
+	srv := http.Server{
+		Addr:    fmt.Sprintf(":%s", os.Getenv("PORT")),
 		Handler: router,
 	}
 
-	log.Printf("Server started and listening n port :%s ", p)
-	if err := s.ListenAndServe(); err != nil {
-		log.Fatal(err)
-	}
+	fmt.Printf("Listening on port %s\n", os.Getenv("PORT"))
+	srv.ListenAndServe()
 }
