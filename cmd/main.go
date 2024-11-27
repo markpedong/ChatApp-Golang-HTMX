@@ -13,9 +13,9 @@ import (
 func main() {
 	p := os.Getenv("PORT")
 	route := http.NewServeMux()
-	routes.CreateRoutes(route)
 	fileServer := http.FileServer(http.Dir("./static"))
 	route.Handle("/static/*", http.StripPrefix("/static/", fileServer))
+	routes.CreateRoutes(route)
 
 	s := http.Server{
 		Addr:    fmt.Sprintf(":%s", p),
