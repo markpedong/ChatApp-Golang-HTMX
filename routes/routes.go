@@ -6,9 +6,9 @@ import (
 	"chat-app/golang-htmx/templates/components"
 	"context"
 	"fmt"
-	"net/http"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"golang.org/x/net/websocket"
 )
 
@@ -16,7 +16,7 @@ type ErrJSON struct {
 	Message string `json:"message"`
 }
 
-func joinChat(w http.ResponseWriter, r *http.Request) {
+func joinChat(ctx *gin.Context) {
 	websocket.Handler(func(ws *websocket.Conn) {
 		defer ws.Close()
 
@@ -41,14 +41,14 @@ func joinChat(w http.ResponseWriter, r *http.Request) {
 			// }
 			// fmt.Printf("%s\n", msg)
 		}
-	}).ServeHTTP(w, r)
+	}).ServeHTTP(ctx.Writer, ctx.Request)
 }
 
-func CreateRoutes(s *http.ServeMux) {
-	s.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+func CreateRoutes(s *gin.Engine) {
+	s.GET("/", func(ctx *gin.Context) {
 		component := templates.Index()
-		component.Render(context.Background(), w)
+		component.Render(context.Background(), ctx.Writer)
 	})
 
-	s.HandleFunc("/ws/chat", joinChat)
+	s.GET("/ws/chat", joinChat)
 }

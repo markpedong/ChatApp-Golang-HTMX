@@ -15,9 +15,9 @@ templ Index() {
 		</head>
 		<body>
 			<div hx-ext="ws" ws-connect="/ws/chat">
-				<div class="w-screen min-h-screen flex flex-col items-center gap-[1.5rem] justify-center max-w-7xl bg-black" id="chat_room">
+				<div class="w-screen min-h-screen flex flex-col items-center gap-[1.5rem] justify-center bg-black" id="chat-room">
 					<div class="text-green-500 text-lg">Hello World!</div>
-					@components.Message("Welcome, atlas!")
+					@components.Message("------------")
 				</div>
 			</div>
 		</body>
