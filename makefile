@@ -4,7 +4,7 @@ css-watch:
 	
 .PHONY: dev
 dev:
-	go build -o ./tmp/main ./cmd/main.go && air
+	make css-watch && air && templ generate --watch --proxy=http://localhost:8080
 
 .PHONY: build
 build:

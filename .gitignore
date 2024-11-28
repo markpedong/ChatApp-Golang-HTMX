@@ -3,3 +3,4 @@
 *.out
 tmp
 *_templ.txt
+*_templ.go

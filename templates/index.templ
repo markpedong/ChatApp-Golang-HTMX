@@ -1,5 +1,7 @@
 package templates
 
+import "chat-app/golang-htmx/templates/components"
+
 templ Index() {
 	<!DOCTYPE html>
 	<html lang="en">
@@ -8,9 +10,16 @@ templ Index() {
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<title>Document</title>
 			<link rel="stylesheet" href="/static/css/output.css"/>
+			<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+			<script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"></script>
 		</head>
 		<body>
-			<div class="bg-black">Hello World!</div>
+			<div hx-ext="ws" ws-connect="/ws/chat">
+				<div class="w-screen min-h-screen flex flex-col items-center gap-[1.5rem] justify-center max-w-7xl bg-black" id="chat_room">
+					<div class="text-green-500 text-lg">Hello World!</div>
+					@components.Message("Welcome, atlas!")
+				</div>
+			</div>
 		</body>
 	</html>
 }
