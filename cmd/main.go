@@ -1,7 +1,8 @@
 package main
 
 import (
-	"chat-app/golang-htmx/routes"
+	"chat-app/golang-htmx/templates"
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -12,7 +13,11 @@ import (
 func main() {
 	files := http.FileServer(http.Dir("./static"))
 	router := http.NewServeMux()
-	routes.CreateRoutes(router)
+
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		component := templates.Index()
+		component.Render(context.Background(), w)
+	})
 
 	router.Handle("/static/", http.StripPrefix("/static/", files))
 
