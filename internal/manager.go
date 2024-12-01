@@ -31,6 +31,8 @@ func (m *Manager) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 	defer ws.Close()
 
+	newClient := NewClient(ws, m)
+
 	component := components.Message("Hello Client!")
 	buffer := &bytes.Buffer{}
 	component.Render(r.Context(), buffer)
