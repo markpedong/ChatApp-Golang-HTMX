@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"chat-app/golang-htmx/templates/components"
 	"fmt"
+	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
@@ -24,8 +24,8 @@ func NewManager() *Manager {
 	}
 }
 
-func (m *Manager) Handle(c *gin.Context) {
-	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+func (m *Manager) Handle(w http.ResponseWriter, r *http.Request) {
+	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
 	}
@@ -33,7 +33,7 @@ func (m *Manager) Handle(c *gin.Context) {
 
 	component := components.Message("Hello Client!")
 	buffer := &bytes.Buffer{}
-	component.Render(c, buffer)
+	component.Render(r.Context(), buffer)
 	for {
 		err := ws.WriteMessage(websocket.TextMessage, buffer.Bytes())
 		if err != nil {
