@@ -3,17 +3,24 @@ package main
 import (
 	"chat-app/golang-htmx/routes"
 	"fmt"
+	"net/http"
 	"os"
 
-	"github.com/gin-gonic/gin"
 	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
-	router := gin.Default()
-	router.Static("/static", "./static")
+	files := http.FileServer(http.Dir("./static"))
+	router := http.NewServeMux()
+
+	router.Handle("/static/", http.StripPrefix("/static/", files))
 	routes.CreateRoutes(router)
 
+	srv := http.Server{
+		Addr:    fmt.Sprintf(":%s", os.Getenv("PORT")),
+		Handler: router,
+	}
+
 	fmt.Printf("Listening on port %s\n", os.Getenv("PORT"))
-	router.Run(":" + os.Getenv("PORT"))
+	srv.ListenAndServe()
 }

@@ -1,22 +1,31 @@
-package routes
+package internal
 
 import (
 	"bytes"
-	"chat-app/golang-htmx/templates"
 	"chat-app/golang-htmx/templates/components"
 	"fmt"
-	"net/http"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
+
+type Manager struct {
+	ClientList []*Client
+}
 
 var (
 	upgrader = websocket.Upgrader{}
 )
 
-func joinChat(w http.ResponseWriter, r *http.Request) {
-	ws, err := upgrader.Upgrade(w, r, nil)
+func NewManager() *Manager {
+	return &Manager{
+		ClientList: []*Client{},
+	}
+}
+
+func (m *Manager) Handle(c *gin.Context) {
+	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		return
 	}
@@ -24,7 +33,7 @@ func joinChat(w http.ResponseWriter, r *http.Request) {
 
 	component := components.Message("Hello Client!")
 	buffer := &bytes.Buffer{}
-	component.Render(r.Context(), buffer)
+	component.Render(c, buffer)
 	for {
 		err := ws.WriteMessage(websocket.TextMessage, buffer.Bytes())
 		if err != nil {
@@ -43,14 +52,4 @@ func joinChat(w http.ResponseWriter, r *http.Request) {
 		// }
 		// fmt.Printf("%s\n", msg)
 	}
-
-}
-
-func CreateRoutes(s *http.ServeMux) {
-	s.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		component := templates.Index()
-		component.Render(r.Context(), w)
-	})
-
-	s.HandleFunc("/ws/chat", joinChat)
 }
