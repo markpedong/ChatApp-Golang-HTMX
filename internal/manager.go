@@ -1,17 +1,20 @@
 package internal
 
 import (
-	"bytes"
-	"chat-app/golang-htmx/templates/components"
-	"fmt"
+	"context"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/websocket"
 )
 
 type Manager struct {
-	ClientList []*Client
+	ClientList             []*Client
+	ClientListEventChannel chan *ClientListEvent
+}
+
+type ClientListEvent struct {
+	EventType string
+	Client    *Client
 }
 
 var (
@@ -20,7 +23,40 @@ var (
 
 func NewManager() *Manager {
 	return &Manager{
-		ClientList: []*Client{},
+		ClientList:             []*Client{},
+		ClientListEventChannel: make(chan *ClientListEvent),
+	}
+}
+
+func (m *Manager) HandleClientListEventChannel(ctx context.Context) {
+	for {
+		select {
+		case clientListEvent, ok := <-m.ClientListEventChannel:
+			if !ok {
+				return
+			}
+			switch clientListEvent.EventType {
+			case "ADD":
+				for _, v := range m.ClientList {
+					if v.ID == clientListEvent.Client.ID {
+						return
+					}
+				}
+
+				m.ClientList = append(m.ClientList, clientListEvent.Client)
+			case "REMOVE":
+				newSlice := []*Client{}
+				for _, v := range m.ClientList {
+					if v.ID == clientListEvent.Client.ID {
+						continue
+					}
+					newSlice = append(newSlice, v)
+				}
+				m.ClientList = newSlice
+			}
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 
@@ -29,29 +65,14 @@ func (m *Manager) Handle(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	defer ws.Close()
 
 	newClient := NewClient(ws, m)
 
-	component := components.Message("Hello Client!")
-	buffer := &bytes.Buffer{}
-	component.Render(r.Context(), buffer)
-	for {
-		err := ws.WriteMessage(websocket.TextMessage, buffer.Bytes())
-		if err != nil {
-			fmt.Printf("Error: %s\n", err)
-			return
-
-		}
-
-		time.Sleep(time.Second * 10)
-
-		// Read
-		// _, msg, err := ws.ReadMessage()
-		// if err != nil {
-		// 	c.AbortWithError(http.StatusInternalServerError, err)
-		// 	return
-		// }
-		// fmt.Printf("%s\n", msg)
+	m.ClientListEventChannel <- &ClientListEvent{
+		EventType: "ADD",
+		Client:    newClient,
 	}
+
+	go newClient.ReadMessages(r)
+	go newClient.WriteMessages(r)
 }

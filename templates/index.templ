@@ -1,7 +1,5 @@
 package templates
 
-import "chat-app/golang-htmx/templates/components"
-
 templ Index() {
 	<!DOCTYPE html>
 	<html lang="en">
@@ -17,7 +15,10 @@ templ Index() {
 			<div hx-ext="ws" ws-connect="/ws/chat">
 				<div class="w-screen min-h-screen flex flex-col items-center gap-[1.5rem] justify-center bg-black" id="chat-room">
 					<div class="text-green-500 text-lg">Hello World!</div>
-					@components.Message("------------")
+					<form id="form" ws-send>
+						<input name="chat-message"/>
+					</form>
+					<div id="messages"></div>
 				</div>
 			</div>
 		</body>
