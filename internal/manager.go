@@ -61,10 +61,11 @@ func (m *Manager) HandleClientListEventChannel(ctx context.Context) {
 	}
 }
 
-func (m *Manager) Handle(w http.ResponseWriter, r *http.Request, ctx context.Context) (err error) {
+func (m *Manager) Handle(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		return err
+		fmt.Printf("Error upgrading to WebSocket: %s\n", err)
+		return
 	}
 
 	var wg sync.WaitGroup
@@ -75,11 +76,8 @@ func (m *Manager) Handle(w http.ResponseWriter, r *http.Request, ctx context.Con
 		Client:    newClient,
 	}
 
-	fmt.Println("Client connected:", newClient.ID)
-
-	wg.Add(1)
-	go newClient.ReadMessages(r)
-	go newClient.WriteMessages(r)
+	wg.Add(2)
+	go newClient.ReadMessages(r.Context())
+	go newClient.WriteMessages(r.Context())
 	wg.Wait()
-	return nil
 }

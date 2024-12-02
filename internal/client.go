@@ -3,8 +3,8 @@ package internal
 import (
 	"bytes"
 	"chat-app/golang-htmx/templates/components"
+	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -36,7 +36,7 @@ func (c *Client) closeConnection() {
 	}
 }
 
-func (c *Client) ReadMessages(r *http.Request) {
+func (c *Client) ReadMessages(ctx context.Context) {
 	defer c.closeConnection()
 	for {
 		_, msg, err := c.Conn.ReadMessage()
@@ -53,7 +53,7 @@ func (c *Client) ReadMessages(r *http.Request) {
 	}
 }
 
-func (c *Client) WriteMessages(r *http.Request) {
+func (c *Client) WriteMessages(ctx context.Context) {
 	defer c.closeConnection()
 
 	for {
@@ -65,16 +65,11 @@ func (c *Client) WriteMessages(r *http.Request) {
 
 			component := components.Message(text)
 			buffer := &bytes.Buffer{}
-			err := component.Render(r.Context(), buffer)
-			if err != nil {
-				fmt.Printf("Error rendering component: %v\n", err)
-				continue
-			}
-
+			component.Render(ctx, buffer)
 			for _, client := range c.Manager.ClientList {
 				messageHTML := buffer.String()
 
-				err := client.Conn.WriteMessage(websocket.TextMessage, []byte(messageHTML))
+				err := client.Conn.WriteMessage(websocket.TextMessage, buffer.Bytes())
 				if err != nil {
 					fmt.Printf("Error sending message to client %s: %s\n", client.ID, err)
 					client.Conn.Close()
@@ -83,7 +78,7 @@ func (c *Client) WriteMessages(r *http.Request) {
 				fmt.Printf("Message sent to client %s: %s\n", client.ID, messageHTML) // Debug log
 			}
 
-		case <-r.Context().Done():
+		case <-ctx.Done():
 			return
 		}
 	}
