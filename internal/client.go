@@ -40,10 +40,10 @@ func (c *Client) ReadMessages(r *http.Request) {
 	for {
 		_, msg, err := c.Conn.ReadMessage()
 		if err != nil {
-			fmt.Printf("ERROR: %s\n", err.Error())
+			fmt.Printf("Error reading message from WebSocket: %s\n", err)
 			return
 		}
-		fmt.Printf("Received message: %s\n", msg) // Log received message
+		fmt.Printf("Received message: %s\n", msg)
 		c.MessageChannel <- string(msg)
 	}
 }
@@ -63,16 +63,24 @@ func (c *Client) WriteMessages(r *http.Request) {
 			if !ok {
 				return
 			}
-			fmt.Printf("Sending message: %s\n", text) // Log sent message
+
 			component := components.Message(text)
 			buffer := &bytes.Buffer{}
-			component.Render(r.Context(), buffer)
+			err := component.Render(r.Context(), buffer)
+			if err != nil {
+				fmt.Printf("Error rendering component: %v\n", err)
+				continue
+			}
 
 			for _, client := range c.Manager.ClientList {
-				err := client.Conn.WriteMessage(websocket.TextMessage, buffer.Bytes())
+				message := fmt.Sprintf("Message from client %s: %s", c.ID, text)
+				fmt.Printf("Broadcasting: %s\n", message) // Debug log
+
+				err := client.Conn.WriteMessage(websocket.TextMessage, []byte(message))
 				if err != nil {
-					fmt.Printf("Error sending message: %s\n", err)
-					return
+					fmt.Printf("Error sending message to client %s: %s\n", client.ID, err)
+					client.Conn.Close() // Cleanup
+					continue
 				}
 			}
 

@@ -37,20 +37,19 @@ func (m *Manager) HandleClientListEventChannel(ctx context.Context) {
 			}
 			switch clientListEvent.EventType {
 			case "ADD":
-				for _, v := range m.ClientList {
-					if v.ID == clientListEvent.Client.ID {
+				for _, client := range m.ClientList {
+					if client.ID == clientListEvent.Client.ID {
 						return
 					}
 				}
-
 				m.ClientList = append(m.ClientList, clientListEvent.Client)
 			case "REMOVE":
 				newSlice := []*Client{}
-				for _, v := range m.ClientList {
-					if v.ID == clientListEvent.Client.ID {
+				for _, client := range m.ClientList {
+					if client.ID == clientListEvent.Client.ID {
 						continue
 					}
-					newSlice = append(newSlice, v)
+					newSlice = append(newSlice, client)
 				}
 				m.ClientList = newSlice
 			}
