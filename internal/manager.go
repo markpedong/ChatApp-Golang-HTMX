@@ -59,10 +59,10 @@ func (m *Manager) HandleClientListEventChannel(ctx context.Context) {
 	}
 }
 
-func (m *Manager) Handle(w http.ResponseWriter, r *http.Request) {
+func (m *Manager) Handle(w http.ResponseWriter, r *http.Request, ctx context.Context) (err error) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		return
+		return err
 	}
 
 	newClient := NewClient(ws, m)
@@ -74,4 +74,6 @@ func (m *Manager) Handle(w http.ResponseWriter, r *http.Request) {
 
 	go newClient.ReadMessages(r)
 	go newClient.WriteMessages(r)
+
+	return nil
 }

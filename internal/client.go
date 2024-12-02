@@ -64,6 +64,7 @@ func (c *Client) WriteMessages(r *http.Request) {
 				return
 			}
 
+			// Render the message component with the received text
 			component := components.Message(text)
 			buffer := &bytes.Buffer{}
 			err := component.Render(r.Context(), buffer)
@@ -72,22 +73,22 @@ func (c *Client) WriteMessages(r *http.Request) {
 				continue
 			}
 
+			// Send the rendered message to the WebSocket
 			for _, client := range c.Manager.ClientList {
-				message := fmt.Sprintf("Message from client %s: %s", c.ID, text)
-				fmt.Printf("Broadcasting: %s\n", message) // Debug log
+				messageHTML := buffer.String() // Get the HTML content to send
 
-				err := client.Conn.WriteMessage(websocket.TextMessage, []byte(message))
+				// Send the rendered message to the client
+				err := client.Conn.WriteMessage(websocket.TextMessage, []byte(messageHTML))
 				if err != nil {
 					fmt.Printf("Error sending message to client %s: %s\n", client.ID, err)
 					client.Conn.Close() // Cleanup
 					continue
 				}
+				fmt.Printf("Message sent to client %s: %s\n", client.ID, messageHTML) // Debug log
 			}
 
 		case <-r.Context().Done():
 			return
 		}
-
 	}
-
 }
