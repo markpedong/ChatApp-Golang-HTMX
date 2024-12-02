@@ -28,18 +28,23 @@ func NewClient(ws *websocket.Conn, manager *Manager) *Client {
 	}
 }
 
-func (c *Client) ReadMessages(r *http.Request) {
-	defer func() {
-		c.Conn.Close()
-		c.Manager.ClientListEventChannel <- &ClientListEvent{
-			Client:    c,
-			EventType: "REMOVE",
-		}
-	}()
+func (c *Client) closeConnection() {
+	c.Conn.Close()
+	c.Manager.ClientListEventChannel <- &ClientListEvent{
+		Client:    c,
+		EventType: "REMOVE",
+	}
+}
 
+func (c *Client) ReadMessages(r *http.Request) {
+	defer c.closeConnection()
 	for {
 		_, msg, err := c.Conn.ReadMessage()
 		if err != nil {
+			if websocket.IsCloseError(err) {
+				fmt.Printf("WebSocket connection closed: %v\n", err)
+				return
+			}
 			fmt.Printf("Error reading message from WebSocket: %s\n", err)
 			return
 		}
@@ -49,13 +54,7 @@ func (c *Client) ReadMessages(r *http.Request) {
 }
 
 func (c *Client) WriteMessages(r *http.Request) {
-	defer func() {
-		c.Conn.Close()
-		c.Manager.ClientListEventChannel <- &ClientListEvent{
-			Client:    c,
-			EventType: "REMOVE",
-		}
-	}()
+	defer c.closeConnection()
 
 	for {
 		select {
@@ -64,7 +63,6 @@ func (c *Client) WriteMessages(r *http.Request) {
 				return
 			}
 
-			// Render the message component with the received text
 			component := components.Message(text)
 			buffer := &bytes.Buffer{}
 			err := component.Render(r.Context(), buffer)
@@ -73,15 +71,13 @@ func (c *Client) WriteMessages(r *http.Request) {
 				continue
 			}
 
-			// Send the rendered message to the WebSocket
 			for _, client := range c.Manager.ClientList {
-				messageHTML := buffer.String() // Get the HTML content to send
+				messageHTML := buffer.String()
 
-				// Send the rendered message to the client
 				err := client.Conn.WriteMessage(websocket.TextMessage, []byte(messageHTML))
 				if err != nil {
 					fmt.Printf("Error sending message to client %s: %s\n", client.ID, err)
-					client.Conn.Close() // Cleanup
+					client.Conn.Close()
 					continue
 				}
 				fmt.Printf("Message sent to client %s: %s\n", client.ID, messageHTML) // Debug log

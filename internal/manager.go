@@ -2,7 +2,9 @@ package internal
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
@@ -65,6 +67,7 @@ func (m *Manager) Handle(w http.ResponseWriter, r *http.Request, ctx context.Con
 		return err
 	}
 
+	var wg sync.WaitGroup
 	newClient := NewClient(ws, m)
 
 	m.ClientListEventChannel <- &ClientListEvent{
@@ -72,8 +75,11 @@ func (m *Manager) Handle(w http.ResponseWriter, r *http.Request, ctx context.Con
 		Client:    newClient,
 	}
 
+	fmt.Println("Client connected:", newClient.ID)
+
+	wg.Add(1)
 	go newClient.ReadMessages(r)
 	go newClient.WriteMessages(r)
-
+	wg.Wait()
 	return nil
 }

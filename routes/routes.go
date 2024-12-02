@@ -8,13 +8,8 @@ import (
 	"net/http"
 )
 
-func CreateRoutes(s *http.ServeMux) {
+func CreateRoutes(s *http.ServeMux, manager *internal.Manager, ctx context.Context) {
 	files := http.FileServer(http.Dir("./static"))
-	manager := internal.NewManager()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go manager.HandleClientListEventChannel(ctx)
 
 	s.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		component := templates.Index()
