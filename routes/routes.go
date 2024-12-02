@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"chat-app/golang-htmx/controllers.go"
 	"chat-app/golang-htmx/internal"
 	"chat-app/golang-htmx/templates"
 	"context"
@@ -16,6 +17,7 @@ func CreateRoutes(s *http.ServeMux, manager *internal.Manager, ctx context.Conte
 	})
 
 	s.HandleFunc("/ws/chat", manager.Handle)
+	s.HandleFunc("/components", controllers.HandleComponent)
 
 	s.Handle("/static/", http.StripPrefix("/static/", files))
 }

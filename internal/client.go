@@ -5,6 +5,7 @@ import (
 	"chat-app/golang-htmx/templates/components"
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -17,6 +18,11 @@ type Client struct {
 	Manager        *Manager
 	MessageChannel chan string
 }
+
+var (
+	pongWaitTime = time.Second * 10
+	pingInterval = time.Second * 9
+)
 
 func NewClient(ws *websocket.Conn, manager *Manager) *Client {
 	return &Client{
@@ -37,14 +43,23 @@ func (c *Client) closeConnection() {
 }
 
 func (c *Client) ReadMessages(ctx context.Context) {
+	if err := c.Conn.SetReadDeadline(time.Now().Add(pongWaitTime)); err != nil {
+		fmt.Printf("Error setting read deadline: %s\n", err)
+		return
+	}
+	c.Conn.SetPongHandler(func(appData string) error {
+		if err := c.Conn.SetReadDeadline(time.Now().Add(pongWaitTime)); err != nil {
+			fmt.Printf("Error setting read deadline: %s\n", err)
+			return err
+		}
+		fmt.Println("Pong received")
+		return nil
+	})
 	defer c.closeConnection()
+
 	for {
 		_, msg, err := c.Conn.ReadMessage()
 		if err != nil {
-			if websocket.IsCloseError(err) {
-				fmt.Printf("WebSocket connection closed: %v\n", err)
-				return
-			}
 			fmt.Printf("Error reading message from WebSocket: %s\n", err)
 			return
 		}
@@ -56,6 +71,7 @@ func (c *Client) ReadMessages(ctx context.Context) {
 func (c *Client) WriteMessages(ctx context.Context) {
 	defer c.closeConnection()
 
+	ticker := time.NewTicker(pingInterval)
 	for {
 		select {
 		case text, ok := <-c.MessageChannel:
@@ -66,20 +82,23 @@ func (c *Client) WriteMessages(ctx context.Context) {
 			component := components.Message(text)
 			buffer := &bytes.Buffer{}
 			component.Render(ctx, buffer)
-			for _, client := range c.Manager.ClientList {
-				messageHTML := buffer.String()
 
+			for _, client := range c.Manager.ClientList {
 				err := client.Conn.WriteMessage(websocket.TextMessage, buffer.Bytes())
 				if err != nil {
 					fmt.Printf("Error sending message to client %s: %s\n", client.ID, err)
-					client.Conn.Close()
 					continue
 				}
-				fmt.Printf("Message sent to client %s: %s\n", client.ID, messageHTML) // Debug log
 			}
 
 		case <-ctx.Done():
 			return
+		case <-ticker.C:
+			if err := c.Conn.WriteMessage(websocket.PingMessage, []byte("")); err != nil {
+				fmt.Printf("Error sending ping message: %s\n", err)
+				return
+			}
+			fmt.Println("Sent ping message")
 		}
 	}
 }
